@@ -1,9 +1,13 @@
 import os
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from flask import request,jsonify
+from flask import request
 from functools import wraps
+import logging
+import datetime
 
 class AgentUtils:
+    logging.basicConfig(filename="/var/log/vertica-agent/agent.log",level=logging.DEBUG)
+    
     AGENT_KEY=os.getenv("AGENT_KEY")
     #Service loading
     def __new__(cls):
@@ -44,19 +48,33 @@ class AgentUtils:
                     try:
                         token= AgentUtils.token_loader(byte_token) #Error point
                         if token.get("confirm"):
+                            AgentUtils.log("Token matched!")
                             return func(*args,**kwagrs)
                         else:
-                            print("Token not matched")
+                            AgentUtils.error_log(400,"Token not matched")
                             return "Failed", 400
                     except Exception as e:
-                        print("BadSignature!")
-                        print(e)
+                        AgentUtils.error_log(400,"BadSignature!")
                         return "Failed",400   
                 else:
+                    AgentUtils.error_log(400,"Token not given!")
                     print("Token not given!")
                     return "Failed",400
         return wrapper
-        
+    
+    @staticmethod
+    def log(message):
+        dt= datetime.datetime.now()
+        log_date=dt.strftime("%y%m%d_%H:%M:%S")
+        log_message = f"{log_date}: [{message}]"
+        logging.info(log_message)
+    
+    @staticmethod
+    def error_log(error_code,error_message):
+        dt= datetime.datetime.now()
+        log_date=dt.strftime("%y%m%d_%H:%M:%S")
+        log_message= f"{log_date}: [{error_code}] [{error_message}]"
+        logging.error(log_message)
             
                     
 
