@@ -76,9 +76,18 @@ class AgentUtils:
         log_message= f"{log_date}: [{error_code}] [{error_message}]"
         logging.error(log_message)
             
-                    
-
     
+    @staticmethod
+    def redis_config(port):
+        filepath= f"/etc/redis/redis_{port}.conf"
+        if os.path.isfile(filepath):
+            with open(filepath) as handle:
+                for line in handle:
+                    if line != "\n" and not line.startswith("#"):
+                        key,value = line.lstrip().split(" ",1)
+                        value = value.replace("\n","")
+                        yield key,value
+        
         
     
     

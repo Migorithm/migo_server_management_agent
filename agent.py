@@ -1,4 +1,4 @@
-from flask import Flask,request
+from flask import Flask,request,jsonify
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from utils import AgentUtils
 import os
@@ -44,4 +44,26 @@ def redis_restart():
         print(service.ActiveState)
         time.sleep(3)
     AgentUtils.log("Service turned active")
+    return "Executed", 200
+
+@app.route("/redis/command/get_config",methods=["POST"])
+@AgentUtils.token_check
+def redis_get_config():
+    port= request.get_json().get("port")
+    data = AgentUtils.redis_config(port)
+    if data:
+        return jsonify(dict(AgentUtils.redis_config(port)))
+    else:
+        return "Failed", 400
+    
+
+@app.route("/redis/command/set_config",methods=["POST"])
+@AgentUtils.token_check
+def redis_set_config():
+    port= request.get_json().get("port")
+    data= request.get_json().get("data")
+    with open(f"/etc/redis/redis_{port}.conf","w") as file:
+        for k,v in data.items():
+            line= " ".join((k,v)) + "\n"
+            file.write(line)
     return "Executed", 200
