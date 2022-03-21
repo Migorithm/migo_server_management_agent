@@ -12,6 +12,7 @@ class AgentUtils:
     #Service loading
     def __new__(cls):
         return cls
+
     @classmethod
     def load_service(cls):
         from pystemd.systemd1 import Unit,manager
@@ -24,7 +25,7 @@ class AgentUtils:
         
         for service in services:
             serv = service[0].decode('utf-8')
-            service_name= re.sub(r"[@.]",r"_",serv).upper()
+            service_name= re.sub(r"[@.]",r"_",serv).upper() 
             unit=Unit(service[0].decode("utf-8"))
             unit.load()
             unit=unit.Unit
