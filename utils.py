@@ -4,6 +4,11 @@ from flask import request
 from functools import wraps
 import logging
 import datetime
+from systemdmanager import SystemdManager
+import re
+
+
+
 
 class AgentUtils:
     logging.basicConfig(filename="/var/log/vertica-agent/agent.log",level=logging.DEBUG)
@@ -12,25 +17,24 @@ class AgentUtils:
     #Service loading
     def __new__(cls):
         return cls
-
+            
+    #Automatic registration of services
     @classmethod
-    def load_service(cls):
-        from pystemd.systemd1 import Unit,manager
-        import re
-        mng = manager.Manager()
-        mng.load()
+    def LoadService(cls):
+        interface = SystemdManager._get_interface()
         regex = re.compile(r"redis.*service|elastic.*service|kafka.*service")
-        services= list(filter(lambda x: regex.match(x[0].decode('utf-8')), mng.Manager.ListUnits()))
-        cls.services={}
+        unitnames = [str(unit[0]) for unit in interface.ListUnits() if regex.match(unit[0])]
         
-        for service in services:
-            serv = service[0].decode('utf-8')
-            service_name= re.sub(r"[@.]",r"_",serv).upper() 
-            unit=Unit(service[0].decode("utf-8"))
-            unit.load()
-            unit=unit.Unit
-            setattr(AgentUtils,service_name,unit)
-            #Put unit first so you can get the state of unit synchronously.
+        for unit in unitnames:
+            service_name = re.sub(r"[@.]",r"_",unit).upper()
+            sub_class = type(service_name,(object,),{
+                #constructor
+                "Restart": lambda mode="replace": SystemdManager.Restart(unit, mode=mode),
+                "Start": lambda mode="replace": SystemdManager.Start(unit, mode=mode),
+                "Stop": lambda mode="replace": SystemdManager.Stop(unit,mode=mode)})
+            setattr(cls,service_name,sub_class)
+    
+            
     @staticmethod
     def token_loader(token):
         serializer = Serializer(AgentUtils.AGENT_KEY)
@@ -56,6 +60,7 @@ class AgentUtils:
                             return "Failed", 400
                     except Exception as e:
                         AgentUtils.error_log(400,"BadSignature!")
+                        logging.exception("Bad Signature!")
                         return "Failed",400   
                 else:
                     AgentUtils.error_log(400,"Token not given!")
@@ -88,7 +93,8 @@ class AgentUtils:
                         key,value = line.lstrip().split(" ",1)
                         value = value.replace("\n","")
                         yield key,value
-        
+    
+    
         
     
     

@@ -1,5 +1,4 @@
 from flask import Flask,request,jsonify
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from utils import AgentUtils
 import os
 import yaml
@@ -8,7 +7,7 @@ import time
 
 
 app = Flask(__name__)
-AgentUtils.load_service()
+AgentUtils.LoadService()
 
 @app.route("/es/command/restart",methods=["POST"])
 def es_restart():
@@ -25,6 +24,7 @@ def es_config() -> tuple:
             yaml.dump(res,file) #put res into file 
             return "Executed",200 #Status Code 200
     except Exception as e:
+        
         return "Failed",400
 
 
