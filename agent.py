@@ -2,7 +2,9 @@ from flask import Flask,request,jsonify
 from utils import AgentUtils
 import os
 import yaml
+from werkzeug.utils import secure_filename
 import time
+
 
 
 
@@ -67,3 +69,43 @@ def redis_set_config():
             line= " ".join((k,v)) + "\n"
             file.write(line)
     return "Executed", 200
+
+
+
+
+@app.route('/')
+def status():
+    """
+    This allows to check:
+    1. Health of agent server
+    2. version info - if not sync, this server will be categorized as out-of-sync
+    """
+    message= {
+  "cluster_name" : os.getenv("CLUSTER"),
+  "version" : os.getenv("VERSION"),
+  "tagline" : "You Know, for Vertica"
+    }
+    return jsonify(message)
+
+@app.route('/agent/command/sync',methods=["POST"])
+@AgentUtils.token_check
+def sync():
+    """Synchronize the files on the agent server with one in master server"""
+    dir = os.path.abspath(os.path.dirname(__file__))
+    for _, file in request.files.items():
+        if file.filename == ".flaskenv":  #otherwise, it will store it as just "flaskenv" without dot.
+            file.save(os.path.join(dir,file.filename))
+        elif file.filename == ".gitignore":
+            pass
+        else:
+            filename = secure_filename(file.filename) #To hide the actual path of the file.
+            if filename != "token":
+                file.save(os.path.join(dir,filename)) #Overwrite things even if it exists.
+    return "Executed",200
+    
+
+@app.route('/agent/command/restart' , methods=["POST"])
+@AgentUtils.token_check
+def agent_restart():
+    AgentUtils.VERTICA_AGENT_SERVICE.Restart("replace")
+    return "Executed",200

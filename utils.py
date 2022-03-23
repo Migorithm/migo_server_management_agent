@@ -22,11 +22,11 @@ class AgentUtils:
     @classmethod
     def LoadService(cls):
         interface = SystemdManager._get_interface()
-        regex = re.compile(r"redis.*service|elastic.*service|kafka.*service")
+        regex = re.compile(r"redis.*service|elastic.*service|kafka.*service|vertica.*service")
         unitnames = [str(unit[0]) for unit in interface.ListUnits() if regex.match(unit[0])]
         
         for unit in unitnames:
-            service_name = re.sub(r"[@.]",r"_",unit).upper()
+            service_name = re.sub(r"[@.-]",r"_",unit).upper()
             sub_class = type(service_name,(object,),{
                 #constructor
                 "Restart": lambda mode="replace": SystemdManager.Restart(unit, mode=mode),
@@ -42,13 +42,18 @@ class AgentUtils:
     
     @staticmethod
     def token_check(func):
+        """
+        On the other side, it will post things in the following form
+        requests.post(url,json={"token":token})
+        
+        If it's in transferring files, the token will be posted inside the files object
+        request.post(url,files={"file1":open("file1_path","rb"),{"token":"tokens"}})
+        """
         @wraps(func)
         def wrapper(*args,**kwagrs):
             #confirmation
             if request.method =="POST" : #request.remote_addr 
-                #On the other side, it will post things in the following form
-                #requests.post("http://nodeip:port/command/restart",json={"token":token})
-                byte_token = request.get_json().get("token")
+                byte_token = request.get_json().get("token") or request.files.get("token").read()
                 if byte_token:
                     try:
                         token= AgentUtils.token_loader(byte_token) #Error point
