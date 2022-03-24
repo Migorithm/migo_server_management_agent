@@ -1,4 +1,4 @@
-import dbus
+import dbus #pip install dbus-python
 import re
 
 class SystemdManager(object):
@@ -41,7 +41,6 @@ class SystemdManager(object):
     @classmethod
     def Restart(cls, unit_name, mode="replace"):
         interface = cls._get_interface()
-
         if interface is None:
             return False
 
@@ -137,6 +136,7 @@ class SystemdManager(object):
         except dbus.exceptions.DBusException as error:
             print(error)
             return None
+        
     @classmethod
     def ActiveState(cls, unit_name):
         unit_state = cls.get_active_state(unit_name)
