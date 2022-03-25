@@ -4,7 +4,7 @@ from flask import request
 from functools import wraps
 import logging
 import datetime
-from systemdmanager import SystemdManager
+from .systemdmanager import SystemdManager
 import re
 
 
@@ -36,7 +36,7 @@ class AgentUtils:
     
             
     @staticmethod
-    def token_loader(token):
+    def token_loader(token:str):
         serializer = Serializer(AgentUtils.AGENT_KEY)
         return serializer.loads(token.encode("utf-8"))
     
@@ -53,7 +53,11 @@ class AgentUtils:
         def wrapper(*args,**kwagrs):
             #confirmation
             if request.method =="POST" : #request.remote_addr 
-                byte_token = request.get_json().get("token") or request.files.get("token").read()
+                byte_token=""
+                if request.get_json():
+                    byte_token = request.get_json().get("token")
+                else:
+                    byte_token = request.files.get("token").read().decode('utf-8') #supposed to be bytes type
                 if byte_token:
                     try:
                         token= AgentUtils.token_loader(byte_token) #Error point

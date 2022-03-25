@@ -1,0 +1,18 @@
+[Unit]
+Description=Health Check Service
+After=multi-user.target
+
+
+[Service]
+Type=simple
+WorkingDirectory=/root/agent_project
+ExecStart=/home/wmp-user/.pyenv/shims/flask run
+#ExecStart=/home/wmp-user/.pyenv/shims/python /root/agent_project/agent.py
+StandardInput=tty-force
+Restart=always
+RestartSec=30s
+StartLimitIntervalSec=100
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target

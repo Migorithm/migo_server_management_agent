@@ -1,5 +1,5 @@
 from flask import Flask,request,jsonify
-from utils import AgentUtils
+from .utils import AgentUtils
 import os
 import yaml
 from werkzeug.utils import secure_filename
@@ -97,6 +97,8 @@ def sync():
             file.save(os.path.join(dir,file.filename))
         elif file.filename == ".gitignore":
             pass
+        elif file.filename =="systemdConfig.service":
+            pass
         else:
             filename = secure_filename(file.filename) #To hide the actual path of the file.
             if filename != "token":
@@ -107,5 +109,5 @@ def sync():
 @app.route('/agent/command/restart' , methods=["POST"])
 @AgentUtils.token_check
 def agent_restart():
-    AgentUtils.VERTICA_AGENT_SERVICE.Restart("replace")
+    AgentUtils.VERTICA_AGENT_SERVICE.Restart("replace") #Process ends here. 
     return "Executed",200
