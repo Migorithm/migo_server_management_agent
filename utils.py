@@ -7,8 +7,7 @@ import datetime
 from .systemdmanager import SystemdManager
 import re
 
-
-
+os.makedirs("/var/log/vertica-agent",exist_ok=True)
 
 class AgentUtils:
     logging.basicConfig(filename="/var/log/vertica-agent/agent.log",level=logging.DEBUG)
@@ -19,6 +18,21 @@ class AgentUtils:
         return cls
             
     #Automatic registration of services
+    # @classmethod
+    # def LoadService(cls):
+    #     interface = SystemdManager._get_interface()
+    #     regex = re.compile(r"redis.*service|elastic.*service|kafka.*service|vertica.*service")
+    #     unitnames = [str(unit[0]) for unit in interface.ListUnits() if regex.match(unit[0])]
+        
+    #     for unit in unitnames:
+    #         service_name = re.sub(r"[@.-]",r"_",unit).upper()
+    #         sub_class = type(service_name,(object,),{
+    #             #constructor
+    #             "Restart": lambda mode="replace": SystemdManager.Restart(unit, mode=mode),
+    #             "Start": lambda mode="replace": SystemdManager.Start(unit, mode=mode),
+    #             "Stop": lambda mode="replace": SystemdManager.Stop(unit,mode=mode)})
+    #         setattr(cls,service_name,sub_class)
+            
     @classmethod
     def LoadService(cls):
         interface = SystemdManager._get_interface()
@@ -27,13 +41,23 @@ class AgentUtils:
         
         for unit in unitnames:
             service_name = re.sub(r"[@.-]",r"_",unit).upper()
-            sub_class = type(service_name,(object,),{
-                #constructor
-                "Restart": lambda mode="replace": SystemdManager.Restart(unit, mode=mode),
-                "Start": lambda mode="replace": SystemdManager.Start(unit, mode=mode),
-                "Stop": lambda mode="replace": SystemdManager.Stop(unit,mode=mode)})
-            setattr(cls,service_name,sub_class)
-    
+            class kls:
+                @staticmethod
+                def Restart(unit=unit,mode=b"replace"):
+                    res = SystemdManager.Restart(unit,mode)
+                    return res
+                @staticmethod
+                def Start(unit=unit,mode=b"replace"):
+                    res = SystemdManager.Start(unit,mode)
+                    return res
+                @staticmethod
+                def Stop(unit=unit,mode=b"replace"):
+                    res = SystemdManager.Stop(unit,mode)
+                    return res
+            setattr(cls,service_name,kls)
+            
+
+
             
     @staticmethod
     def token_loader(token:str):

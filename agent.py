@@ -109,5 +109,5 @@ def sync():
 @app.route('/agent/command/restart' , methods=["POST"])
 @AgentUtils.token_check
 def agent_restart():
-    AgentUtils.VERTICA_AGENT_SERVICE.Restart("replace") #Process ends here. 
+    AgentUtils.VERTICA_AGENT_SERVICE.Restart() #Process ends here. 
     return "Executed",200

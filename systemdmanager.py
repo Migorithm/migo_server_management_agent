@@ -18,7 +18,8 @@ class SystemdManager(object):
             return False
 
         try:
-            interface.StartUnit(unit_name, mode)
+            while cls.ActiveState(unit_name) == False:
+                interface.StartUnit(unit_name, mode)
             return True
         except dbus.exceptions.DBusException as error:
             print(error)
@@ -32,7 +33,8 @@ class SystemdManager(object):
             return False
 
         try:
-            interface.StopUnit(unit_name, mode)
+            while cls.ActiveState(unit_name) == True:
+                interface.StopUnit(unit_name, mode)
             return True
         except dbus.exceptions.DBusException as error:
             print(error)
