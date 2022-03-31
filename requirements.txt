@@ -1,6 +1,9 @@
-Flask==2.0.3
-python-dotenv==0.19.2
-itsdangerous==2.0.1
-Werkzeug==2.0.3
+click==8.0.4
 dbus-python==1.2.18
+Flask==2.0.3
+itsdangerous==2.0.1
+Jinja2==3.0.3
+MarkupSafe==2.1.0
+python-dotenv==0.19.2
 PyYAML==6.0
+Werkzeug==2.0.3
