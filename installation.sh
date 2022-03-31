@@ -12,14 +12,83 @@
 #   ARGUMENT1 Python-{version}-tar  (NOT tar.gz)
 #   ARGUMENT2 dependencies.tar.gz   (Where you place all the python dependencies)
 ######################################################################################
-SCRIPT=$(realpath $0)
-CURDIR=$(dirname $SCRIPT)
 
-TAR_FILENAME=$1
-FILENAME="${TAR_FILENAME%.*}"
-VERSION=$(echo $FILENAME | grep -Po "[0-9]{1}\.[0-9]{1,2}")
-DEPENDENCY_TAR=$2
-DEPENDENCY="${DEPENDENCY_TAR%%.}"
+help(){
+  echo -e "  installation.sh [OPTIONS] [arg]
+    -p, --python Path to Python-{version}-tar  (Required)
+    -d, --dependencies Path to Python dependencies to boot up the RESTful service (Required)
+  "
+}
+
+params(){
+  SCRIPT=$(realpath $0)
+  CURDIR=$(dirname $SCRIPT)
+  if [[ "$#" -eq 0 ]];then
+    help
+    exit 1
+  elif [[ -z $(echo "$@" | grep "\-p\|\-\-python") ]];then
+  echo -e "
+  [ERROR] Python tar must be given."
+          help
+          exit 1
+  elif [[ -z $(echo "$@" | grep "\-d\|\-\-dependencies") ]];then
+  echo -e "
+  [ERROR] Python dependencies tar.gz must be given."
+          help
+          exit 1
+  else 
+    while [[ $# -gt 0 ]]; do
+      if [[ "${1,,}" == "-p" ]] || [[ "${1,,}" == "--python" ]]; then
+        shift
+        TAR_FILENAME=$1
+        FILENAME="${TAR_FILENAME%.*}"
+        VERSION=$(echo $FILENAME | grep -Po "[0-9]{1}\.[0-9]{1,2}")
+        #File path Validation
+        if [[ $TAR_FILENAME=$1 =~ ^[-] ]]; then
+          echo -e "
+  [ERROR] Invalid file path."
+          help
+          exit 1
+        elif [[ "$TAR_FILENAME" == "" ]]; then
+          echo -e "
+  [ERROR] File path must be given"
+          help
+          exit 1
+        fi
+        if ! [[ -f $TAR_FILENAME ]]; then
+          echo -e "
+  [ERROR] No such file: $TAR_FILENAME "
+          echo "Program exists..."
+          exit 1
+        fi
+        shift
+      elif [[ "${1,,}" == "-d" ]] || [[ "${1,,}" == "--dependencies" ]]; then
+        shift
+        DEPENDENCY_TAR=$1
+        DEPENDENCY="${DEPENDENCY_TAR%%.}"
+        if [[ $DEPENDENCY_TAR =~ ^[-] ]]; then
+          echo -e "[ERROR] Invalid input."
+          help
+          exit 1
+        elif [[ -z $DEPENDENCY_TAR ]]; then 
+        echo -e "
+  [ERROR] Dependencies must be given."
+          help
+          exit 1
+        fi
+        shift  
+      else
+        help
+        exit 0 
+      fi
+    done
+  fi
+
+}
+
+
+main(){
+    params "$@"
 
 #Decompressed tar 
 tar xfz $TAR_FILENAME
@@ -81,6 +150,10 @@ sudo mkdir /root/vertica-agent
 
 #Move files except for the unwanted
 cd $CURDIR
-sudo mv ./!(installation.sh|$TAR_FILENAME|$FILE_NAME|$DEPENDENCY_TAR|$DEPENDENCY) /root/vertica-agent
+sudo mv ./!("installation.sh"|"$TAR_FILENAME"|"$FILE_NAME"|"$DEPENDENCY_TAR"|"$DEPENDENCY"|"requirements.txt") /root/vertica-agent
 
 sudo service vertica-agent start 
+
+
+
+}
