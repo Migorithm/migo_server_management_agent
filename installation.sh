@@ -135,7 +135,7 @@ main(){
         cd $DEPENDENCY/  ##
         sudo pip${VERSION} install * -f ./ --no-index
 
-        echo '
+        echo "
         [Unit]
         Description=Health Check Service
         After=multi-user.target
@@ -144,7 +144,7 @@ main(){
         [Service]
         Type=simple
         WorkingDirectory=/root/vertica-agent
-        ExecStart=python3.9 -m flask run
+        ExecStart=python${version} -m flask run
         StandardInput=tty-force
         Restart=always
         RestartSec=30s
@@ -153,7 +153,7 @@ main(){
 
         [Install]
         WantedBy=multi-user.target
-        ' | sudo tee "/lib/systemd/system/vertica-agent.service" /dev/null
+        " | sudo tee "/lib/systemd/system/vertica-agent.service" /dev/null
 
         sudo systemctl enable vertica-agent.service
 
