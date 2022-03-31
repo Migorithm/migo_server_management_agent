@@ -64,13 +64,13 @@ params(){
         shift
       elif [[ "${1,,}" == "-d" ]] || [[ "${1,,}" == "--dependencies" ]]; then
         shift
-        DEPENDENCY_TAR=$1
-        DEPENDENCY="${DEPENDENCY_TAR%%.}"
-        if [[ $DEPENDENCY_TAR =~ ^[-] ]]; then
+        TAR_DEPENDENCY=$1
+        DEPENDENCY="${TAR_DEPENDENCY%%.*}"
+        if [[ $TAR_DEPENDENCY =~ ^[-] ]]; then
           echo -e "[ERROR] Invalid input."
           help
           exit 1
-        elif [[ -z $DEPENDENCY_TAR ]]; then 
+        elif [[ -z $TAR_DEPENDENCY ]]; then 
         echo -e "
   [ERROR] Dependencies must be given."
           help
@@ -89,71 +89,92 @@ params(){
 
 main(){
     params "$@"
+    echo "
+    TAR_FILENAME : $TAR_FILENAME
+    FILENAME : $FILENAME
+    VERSION : $VERSION
+    TAR_DEPENDENCY : $TAR_DEPENDENCY
+    DEPENDENCY : $DEPENDENCY
+    "
+    read -p "You you want to continue? [y/N]" -n1 GO
+    GO=${GO,,} 
+    if [ $GO == "y" ];then
+        #Decompressed tar 
+        tar xfz $TAR_FILENAME
 
-#Decompressed tar 
-tar xfz $TAR_FILENAME
+        #Preliminary steps
+        sudo apt-get update 
+        sudo apt-get upgrade
+        sudo apt-get install -y make build-essential libssl-dev zlib1g-dev \
+            libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
+            libncurses5-dev libncursesw5-dev xz-utils tk-dev 
 
-#Preliminary steps
-sudo apt-get update 
-sudo apt-get upgrade
-sudo apt-get install -y make build-essential libssl-dev zlib1g-dev \
-       libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
-       libncurses5-dev libncursesw5-dev xz-utils tk-dev 
+        #For Systemd control
+        sudo apt install -y dbus libdbus-glib-1-dev libdbus-1-dev python-dbus 
 
-#For Systemd control
-sudo apt install -y dbus libdbus-glib-1-dev libdbus-1-dev python-dbus 
+        #prepare build python
+        cd $FILENAME
+        ./configure --enable-optimizations --with-ensurepip=install
+        #enable-optimizations flag will enable some optimizations within Python to make it run about 10 percent faster.
+        #with-ensurepip=install flag will install pip bundled with this installation.
 
-#prepare build python
-cd $FILENAME
-./configure --enable-optimizations --with-ensurepip=install
-#enable-optimizations flag will enable some optimizations within Python to make it run about 10 percent faster.
-#with-ensurepip=install flag will install pip bundled with this installation.
-
-#build python using make
-make -j 8
-# -j option simply tells make to split the building into parallel steps to speed up
-
-
-# You’ll use the altinstall target here to avoid overwriting 
-# the system Python. Since you’re installing into /usr/bin, 
-# you’ll need to run as root:
-sudo make altinstall
-
-cd $CURDIR
-tar zxvf $DEPENDENCY_TAR
-cd $DEPENDENCY
-sudo pip${VERSION} install * -f ./ --no-index
-
-echo '
-[Unit]
-Description=Health Check Service
-After=multi-user.target
+        #build python using make
+        make -j 8
+        # -j option simply tells make to split the building into parallel steps to speed up
 
 
-[Service]
-Type=simple
-WorkingDirectory=/root/vertica-agent
-ExecStart=python3.9 -m flask run
-StandardInput=tty-force
-Restart=always
-RestartSec=30s
-StartLimitIntervalSec=100
-StartLimitBurst=3
+        # You’ll use the altinstall target here to avoid overwriting 
+        # the system Python. Since you’re installing into /usr/bin, 
+        # you’ll need to run as root:
+        sudo make altinstall
 
-[Install]
-WantedBy=multi-user.target
-' | sudo tee "/lib/systemd/system/vertica-agent.service" /dev/null
+        cd $CURDIR
+        tar zxvf $TAR_DEPENDENCY
 
-sudo systemctl enable vertica-agent.service
+        sleep 0.5
+        cd $DEPENDENCY/  ##
+        sudo pip${VERSION} install * -f ./ --no-index
 
-sudo mkdir /root/vertica-agent
+        echo '
+        [Unit]
+        Description=Health Check Service
+        After=multi-user.target
 
-#Move files except for the unwanted
-cd $CURDIR
-sudo mv ./!("installation.sh"|"$TAR_FILENAME"|"$FILE_NAME"|"$DEPENDENCY_TAR"|"$DEPENDENCY"|"requirements.txt") /root/vertica-agent
 
-sudo service vertica-agent start 
+        [Service]
+        Type=simple
+        WorkingDirectory=/root/vertica-agent
+        ExecStart=python3.9 -m flask run
+        StandardInput=tty-force
+        Restart=always
+        RestartSec=30s
+        StartLimitIntervalSec=100
+        StartLimitBurst=3
 
+        [Install]
+        WantedBy=multi-user.target
+        ' | sudo tee "/lib/systemd/system/vertica-agent.service" /dev/null
+
+        sudo systemctl enable vertica-agent.service
+
+        sudo mkdir /root/vertica-agent
+
+        #Move files except for the unwanted
+        FILES=$(ls -a $CURDIR -I . -I ..)
+        for file in $FILES;do
+            case "${file##*/}" in 
+                "installation.sh"|"$TAR_FILENAME"|"$FILE_NAME"|"$TAR_DEPENDENCY"|"$DEPENDENCY"|"requirements.txt")
+                ;;
+            *)
+                sudo mv $CURDIR/$file /root/vertica-agent
+            esac
+        done
+        sudo service vertica-agent start 
+    else
+    echo "Bye!"
+    fi
 
 
 }
+
+main "$@"
