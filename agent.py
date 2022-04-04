@@ -13,7 +13,7 @@ AgentUtils.LoadService()
 
 @app.route("/es/command/restart",methods=["POST"])
 def es_restart():
-    AgentUtils.ELASTICSEARCH_SERVICE.Restart("replace")
+    AgentUtils.ELASTICSEARCH_SERVICE.Restart()
     return "Executed", 200
 
 
@@ -40,7 +40,7 @@ def redis_restart():
             break
     else:
         return "Failed",400
-    service.Restart("replace")
+    service.Restart()
     while service.ActiveState != b"active":
         AgentUtils.log("Current status of service - "+ service.ActiveState.decode("utf-8"))
         print(service.ActiveState)
