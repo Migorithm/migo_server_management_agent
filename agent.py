@@ -95,6 +95,8 @@ def sync():
     for _, file in request.files.items():
         if file.filename == ".flaskenv":  #otherwise, it will store it as just "flaskenv" without dot.
             file.save(os.path.join(dir,file.filename))
+        if file.filename == "__init__.py":
+            file.save(os.path.join(dir,file.filename))
         elif file.filename == ".gitignore":
             pass
         elif file.filename =="systemdConfig.service":
