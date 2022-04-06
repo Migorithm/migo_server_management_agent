@@ -134,7 +134,13 @@ main(){
         sleep 0.5
         cd $DEPENDENCY/  ##
         sudo pip${VERSION} install * -f ./ --no-index
+        
+        OS=$(lsb_release -r | awk '{print $2}')
 
+        #for version 16.04 and up
+        if [[ $OS == "16.04" ]];then 
+        FLASK = $(which flask)
+          if [[ -n $FLASK ]]; then 
         echo "
 [Unit]
 Description=Health Check Service
@@ -144,16 +150,82 @@ After=multi-user.target
 [Service]
 Type=simple
 WorkingDirectory=/root/vertica-agent
+ExecStart=${FLASK} run 
+StandardInput=tty-force
+Restart=always
+RestartSec=30s
+StartLimitInterval=100
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target" | sudo tee "/lib/systemd/system/vertica-agent.service" /dev/null
+
+          else 
+        echo "
+[Unit]
+Description=Health Check Service
+After=multi-user.target
+
+
+[Service]
+Type=simple
+WorkingDirectory=/root/vertica-agent
+ExecStart=python${version} -m flask run 
+StandardInput=tty-force
+Restart=always
+RestartSec=30s
+StartLimitInterval=100
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target" | sudo tee "/lib/systemd/system/vertica-agent.service" /dev/null
+          fi
+
+      #for version 18.04 and up
+      else 
+          FLASK = $(which flask)
+          if [[ -n $FLASK ]]; then
+      echo "
+[Unit]
+Description=Health Check Service
+After=multi-user.target
+StartLimitIntervalSec=100
+StartLimitBurst=3
+
+[Service]
+Type=simple
+WorkingDirectory=/root/vertica-agent
 ExecStart=python${version} -m flask run
 StandardInput=tty-force
 Restart=always
 RestartSec=30s
+
+
+[Install]
+WantedBy=multi-user.target" | sudo tee "/lib/systemd/system/vertica-agent.service" /dev/null
+          else
+      echo "
+[Unit]
+Description=Health Check Service
+After=multi-user.target
 StartLimitIntervalSec=100
 StartLimitBurst=3
 
+
+[Service]
+Type=simple
+WorkingDirectory=/root/vertica-agent
+ExecStart=python${version} -m flask run
+StandardInput=tty-force
+Restart=always
+RestartSec=30s
+
+
 [Install]
-WantedBy=multi-user.target
-        " | sudo tee "/lib/systemd/system/vertica-agent.service" /dev/null
+WantedBy=multi-user.target" | sudo tee "/lib/systemd/system/vertica-agent.service" /dev/null
+          fi
+      fi
+
 
         sudo systemctl enable vertica-agent.service
 
