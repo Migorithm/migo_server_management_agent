@@ -139,7 +139,7 @@ main(){
 
         #for version 16.04 and up
         if [[ $OS == "16.04" ]];then 
-        FLASK = $(which flask)
+        FLASK=$(which flask)
           if [[ -n $FLASK ]]; then 
         echo "
 [Unit]
@@ -183,7 +183,7 @@ WantedBy=multi-user.target" | sudo tee "/lib/systemd/system/vertica-agent.servic
 
       #for version 18.04 and up
       else 
-          FLASK = $(which flask)
+          FLASK=$(which flask)
           if [[ -n $FLASK ]]; then
       echo "
 [Unit]
