@@ -195,7 +195,7 @@ StartLimitBurst=3
 [Service]
 Type=simple
 WorkingDirectory=/root/vertica-agent
-ExecStart=python${version} -m flask run
+ExecStart=$FLASK run
 StandardInput=tty-force
 Restart=always
 RestartSec=30s
