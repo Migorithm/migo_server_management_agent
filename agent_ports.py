@@ -14,7 +14,7 @@ AgentUtils.LoadService()
 @app.route("/es/command/restart",methods=["POST"])
 @AgentUtils.token_check
 def es_restart():
-    port= str(request.get_json().get("port")) #In case we have a couple of redis nodes
+    port= request.get_json().get("port") #
     for attr in AgentUtils.__dict__:
         if port in attr:
             service = AgentUtils.__dict__.get(attr)
@@ -34,8 +34,9 @@ def es_restart():
 @app.route("/es/command/configuration",methods=["POST"])
 @AgentUtils.token_check
 def es_config() -> tuple:
+    port = request.get_json().get("port") or ""
     try:
-        with open(os.getenv("FILEPATH"),"w",encoding="UTF-8") as file:
+        with open(os.getenv("FILEPATH_"+port),"w",encoding="UTF-8") as file:
             res:dict = request.get_json().get("data")
             yaml.dump(res,file) #put res into file 
             return "Executed",200 #Status Code 200

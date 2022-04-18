@@ -133,6 +133,8 @@ main(){
 
         sleep 0.5
         cd $DEPENDENCY/  ##
+        sudo pip${VERSION} --upgrade setuptools
+        sudo pip${VERSION} ez_setup
         sudo pip${VERSION} install * -f ./ --no-index
         
         OS=$(lsb_release -r | awk '{print $2}')
